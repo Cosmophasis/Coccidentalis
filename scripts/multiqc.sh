@@ -1,10 +1,13 @@
 #!/bin/bash
 
 module load python
+module load gcc arrow/19.0.1
 
-virtualenv MultiQC
-source MultiQC/bin/activate
+dir=~/tmp/MultiQC
+
+virtualenv $dir
+source ${dir}/bin/activate
 pip install --no-index --upgrade pip
-pip install multiqc --no-index
+pip install multiqc
 
 multiqc .
