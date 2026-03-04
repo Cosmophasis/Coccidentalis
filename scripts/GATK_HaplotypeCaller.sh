@@ -1,13 +1,13 @@
 #!/bin/bash
-#SBATCH --job-name=GATK_haplotypecaller_%j
+#SBATCH --job-name=GATK_HaplotypeCaller_%j
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=colinchiu62@gmail.com
 #SBATCH --ntasks=1
 #SBATCH -c 16
 #SBATCH --mem-per-cpu=6G
 #SBATCH -t 5-0:0:0
-#SBATCH -o GATK_haplotypecaller_%j.out
-#SBATCH -e GATK_haplotypecaller_%j.err
+#SBATCH -o GATK_HaplotypeCaller_%j.out
+#SBATCH -e GATK_HaplotypeCaller_%j.err
 #SBATCH --array=0-9
 # Change the number of arrays according to number of parallel jobs
 # ${SLURM_ARRAY_TASK_ID} will correspond to the number above
