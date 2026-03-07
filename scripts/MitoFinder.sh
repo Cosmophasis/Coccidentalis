@@ -58,7 +58,7 @@ cd "$outDir" || exit # Mitofinder outputs files directly in wd
 
 # Run MitoFinder in a loop
 while read fastq; do
-    if [[ $(basename "$fastq") =~ "$regex1" ]]; then
+    if [[ $(basename "$fastq") =~ $regex1 ]]; then
         name=$(basename "$fastq" | awk -F'_' '{ print $1 }')
         if [ -d "$outDir""$name" ]; then # Skip the sample if a MitoFinder run is found
             echo "A MitoFinder run for ""$name"" already exists. Skipped"
@@ -69,7 +69,7 @@ while read fastq; do
         --megahit -j "$name" \
         -1 "$fastq" -2 "$fastq2" -r "$genbank" -o 5 \
         -p "$SLURM_CPUS_ON_NODE" -m "$memory_in_G"
-    elif [[ $(basename "$fastq") =~ "$regex2" ]]; then
+    elif [[ $(basename "$fastq") =~ $regex2 ]]; then
         name=$(basename "$fastq" | awk -F'_' '{ print $1 }')
         if [ -d "$outDir""$name" ]; then # Skip the sample if a MitoFinder run is found
             echo "A MitoFinder run for ""$name"" already exists. Skipped"
@@ -80,7 +80,7 @@ while read fastq; do
         --megahit -j "$name" \
         -1 "$fastq" -2 "$fastq2" -r "$genbank" -o 5 \
         -p "$SLURM_CPUS_ON_NODE" -m "$memory_in_G"
-    elif [[ $(basename "$fastq") =~ "$regex3" ]]; then
+    elif [[ $(basename "$fastq") =~ $regex3 ]]; then
         name=$(basename "$fastq" | awk -F'_' '{ print $1$2$3 }')
         if [ -d "$outDir""$name" ]; then # Skip the sample if a MitoFinder run is found
             echo "A MitoFinder run for ""$name"" already exists. Skipped"
