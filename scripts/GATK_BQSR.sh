@@ -8,7 +8,7 @@
 #SBATCH -t 2-0:0:0
 #SBATCH -o GATK_BQSR_%j.out
 #SBATCH -e GATK_BQSR_%j.err
-#SBATCH --array=0-21
+#SBATCH --array=0-18
     # Change the number of arrays according to number of parallel jobs
     # ${SLURM_ARRAY_TASK_ID} will correspond to the number above
 
@@ -32,16 +32,22 @@ mkdir -p "$outDir"logs
 
 
 # Generate file lists of equal size to facilitate running jobs in parallel
-ls "$bamDir"*.bam > "$outDir"BAM.list
-ls "$bamDir1"*_MD.bam >> "$outDir"BAM.list
+if [ ! -f "$outDir"BAM.list ]; then
+    ls "$bamDir"*.bam > "$outDir"BAM.list
+    ls "$bamDir1"*_MD.bam >> "$outDir"BAM.list
+fi
 
 if [ ! -f "$outDir"BAM_0 ]; then
     line_num=$(wc -l "$outDir"BAM.list | awk '{ print $1 }')
     line_per_array=$(("$line_num" / 20))
     line_per_array_int=$(echo "($line_per_array+1.5)/1" | bc) # if the number is a float, convert to integer
-    split -a 1 --numeric-suffixes -l "$line_per_array_int" "$outDir"BAM.list "$outDir"BAM_
+    split -a 2 --numeric-suffixes -l "$line_per_array_int" "$outDir"BAM.list "$outDir"BAM_
 fi
 # This produces 10 equal lists of files, e.g. BAM_RG_MD_0, BAM_RG_MD_1 etc.
+
+job_num=$(printf "%02d/n" "$SLURM_ARRAY_TASK_ID") # Since number of jobs exceed 9, one more digit needed
+
+sleep 20 # Sometimes array jobs can't run because the list of files are not produced yet. Adding this to account for that
 
 regex="^s_[0-9].+_fastp\.fastq"
 
@@ -80,4 +86,4 @@ while read bam; do
     -before "$outDir"Recalibration_table/"$name"_recal1.table \
     -after "$outDir"Recalibration_table/"$name"_recal2.table \
     -plots "$outDir"Covariate_analysis/"$name"_recal2.pdf &> "$outDir"logs/"$name"_AnalyzeCovariates2.out
-done < "$outDir"BAM_"$SLURM_ARRAY_TASK_ID"
+done < "$outDir"BAM_"$job_num"
