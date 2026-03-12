@@ -45,7 +45,7 @@ if [ ! -f "$outDir"BAM_0 ]; then
 fi
 # This produces 10 equal lists of files, e.g. BAM_RG_MD_0, BAM_RG_MD_1 etc.
 
-job_num=$(printf "%02d/n" "$SLURM_ARRAY_TASK_ID") # Since number of jobs exceed 9, one more digit needed
+job_num=$(printf "%02d" "$SLURM_ARRAY_TASK_ID") # Since number of jobs exceed 9, one more digit needed
 
 sleep 20 # Sometimes array jobs can't run because the list of files are not produced yet. Adding this to account for that
 
