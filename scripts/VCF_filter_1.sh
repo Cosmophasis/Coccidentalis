@@ -24,7 +24,7 @@ Sample_data=~/scratch/WGS_processing/3_VariantCalling/VCF/BCGSC_OldReads_genotyp
 # Remove variants that lack reference alleles and remove variants within 5bp of INDELS
 # Only output biallelic SNPs
 
-bcftools filter --threads 16 -S . -e 'FMT/DP<3 | FMT/GQ<20 | FMT/DP>27' $VCF | \
+bcftools filter --threads 16 -S . -e 'FMT/DP<3 | FMT/GQ<20 | FMT/DP>50' $VCF | \
 bcftools filter --threads 16 -e 'AC==0 || AC==AN' --SnpGap 5 | \
 bcftools view --threads 16 -m2 -M2 -v snps -Oz -o "$VCF_bi" -W=tbi
 
