@@ -52,8 +52,10 @@ for Chr in "${chr_array[@]}"; do
     --phased F --prefix "$outDir"fasta/"$Chr" --ali T --tree N --force T
     for fasta in "$outDir"fasta/"$Chr"_sequences/"$Chr"*; do
         name=$(basename "$fasta")
-        # Run iqtree
+        # Run iqtree (first generate varsite then run iqtree on that)
         iqtree2 -s "$fasta" --prefix "$outDir"tree/"$name" \
+        -T "$SLURM_CPUS_PER_TASK" -st DNA -m GTR+ASC
+        iqtree2 -s "$outDir"tree/"$name".varsites.phy \
         -T "$SLURM_CPUS_PER_TASK" -st DNA -m GTR+ASC --abayes
     done
 done
