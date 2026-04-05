@@ -10,6 +10,9 @@
 #SBATCH -e 03_04_GATK_GenomicsDB_Genotype_%j.out
 #SBATCH --array=1-32
 
+# Load module
+module load gatk
+
 
 # Set variables
 DBDir=~/scratch/WGS_processing/03_GenomicsDB/
