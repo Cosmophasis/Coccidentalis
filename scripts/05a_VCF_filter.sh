@@ -31,7 +31,7 @@ export _JAVA_OPTIONS='-Xmx20g'
 bcftools concat \
 -f ~/tmp/vcf.list \
 -Ov -o "$SLURM_TMPDIR"/all_chr.vcf \
---threads "$SLURM_CPUS_PER_TASK" -W=tbi
+--threads "$SLURM_CPUS_PER_TASK"
 
 
 # GATK hard filtering
@@ -52,10 +52,9 @@ bcftools view --threads "$SLURM_CPUS_PER_TASK" \
 bcftools view --threads "$SLURM_CPUS_PER_TASK" \
 -H -m2 -M2 -v snps "$SLURM_TMPDIR"/all_chr_gatk.vcf | shuf -n 5000 > "$SLURM_TMPDIR"/subset.vcf
 cat "$SLURM_TMPDIR"/header.vcf "$SLURM_TMPDIR"/subset.vcf > "$SLURM_TMPDIR"/header_subset.vcf
-bcftools query --threads "$SLURM_CPUS_PER_TASK" \
+bcftools query \
 -i "filter='PASS'" -f '%CHROM\t%POS\t%DP\t%QUAL\t%QD\t%AF{0}\t%MQ\n' \
 "$SLURM_TMPDIR"/header_subset.vcf > "$outDir"HardFiltered_stats.txt
-
 
 
 # First round of bcftools filter
@@ -63,10 +62,10 @@ bcftools filter --threads "$SLURM_CPUS_PER_TASK" -Ou \
 -S . -e 'FMT/DP<3 | FMT/GQ<20 | FMT/DP>50' "$SLURM_TMPDIR"/all_chr_gatk.vcf | \
 bcftools filter --threads "$SLURM_CPUS_PER_TASK" -Ou \
 -e 'AC==0 || AC==AN' --SnpGap 5 | \
-bcftools view --threads "$SLURM_CPUS_PER_TASK" -Ou\
--m2 -M2 -v snps | \
+bcftools view --threads "$SLURM_CPUS_PER_TASK" -Ob \
+-m2 -M2 -v snps -o "$outDir"BCGSC_PacBio_GATKbcftool1_filtered.bcf -W=tbi
 bcftools +fill-tags --threads "$SLURM_CPUS_PER_TASK" \
--Ob -o "$outDir"BCGSC_PacBio_GATKbcftool1_filtered.bcf -W=tbi \
+-Ob -o "$outDir"BCGSC_PacBio_GATKbcftool1_filtered_tagged.bcf -W=tbi "$outDir"BCGSC_PacBio_GATKbcftool1_filtered.bcf \
 -- -t F_MISSING,MAF
 # If a sample has DP<3 or DP>27 (2*AVG(INFO/DP)) convert to missing gt (./.)
 # Remove variants that lack reference alleles and remove variants within 5bp of INDELS
