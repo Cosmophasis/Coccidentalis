@@ -24,10 +24,11 @@ bcftools view --threads "$SLURM_CPUS_PER_TASK" \
 -i "FILTER='PASS'" -Ov "$VCF" | \
 bcftools view --threads "$SLURM_CPUS_PER_TASK" \
 -e "F_MISSING>0.2 || AC<4" -Ob -o ~/scratch/WGS_processing/05_Filtered_VCF/"$name"_GATKbcftools2_filtered_tagged.bcf
-
+bcftools view --threads "$SLURM_CPUS_PER_TASK" \
+-Ov -o "$SLURM_TMPDIR"/"$name".vcf ~/scratch/WGS_processing/05_Filtered_VCF/"$name"_GATKbcftools2_filtered_tagged.bcf
 
 # Read directly from the node local directory
-~/scripts/vcf2phylip.py -i ~/scratch/WGS_processing/05_Filtered_VCF/"$name"_GATKbcftools2_filtered_tagged.bcf \
+~/scripts/vcf2phylip.py -i "$SLURM_TMPDIR"/"$name".vcf \
 --output-folder "$outDir" --output-prefix "$name"_wPacBio_MAC_noLD -o SRR25758751
 
 
