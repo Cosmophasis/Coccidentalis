@@ -8,17 +8,19 @@
 #SBATCH -t 2-0:0:0
 #SBATCH -o TopoWindows_loop_%j.out
 #SBATCH -e TopoWindows_loop_%j.out
-#SBATCH --array=1-16
+#SBATCH --array=1-30
     # Change the number of arrays according to number of parallel jobs
     # ${SLURM_ARRAY_TASK_ID} will correspond to the number above
 
 
-module load r bcftools iq-tree
+module load r bcftools iq-tree python scipy-stack/2026a
 export R_LIBS=~/.local/R/$EBVERSIONR/
 
 
-VCF=~/projects/def-sperling/houwaico/WGS_processing/3_VariantCalling/VCF/BCGSC_OldReads_genotyped_AllChr_filter_GATKbcftools_AC.vcf.gz
-Chrlist=~/scratch/Phylogenomics/Chr.list
+ls ~/scratch/WGS_processing/05_Filtered_VCF/*_GATKbcftools2_filtered_tagged.bcf > ~/tmp/bcf.list
+BCFlist=~/tmp/bcf.list
+BCF=$(awk -v num="$SLURM_ARRAY_TASK_ID" 'NR==num' "$BCFlist")
+name=$(basename $BCF | awk -F'_' '{ print $1"_"$2 }')
 
 
 window="c" # c for region, s for no. of SNPs
@@ -36,26 +38,32 @@ fi
 
 
 # Split chr by array task id
-chr_num_1=$((2*"$SLURM_ARRAY_TASK_ID"-1))
-chr_num_2=$((2*"$SLURM_ARRAY_TASK_ID"))
-declare -a chr_array=($(awk -v num="$chr_num_1" 'NR == num' $Chrlist) $(awk -v num="$chr_num_2" 'NR == num' $Chrlist))
+#chr_num_1=$((2*"$SLURM_ARRAY_TASK_ID"-1))
+#chr_num_2=$((2*"$SLURM_ARRAY_TASK_ID"))
+#declare -a chr_array=($(awk -v num="$chr_num_1" 'NR == num' $Chrlist) $(awk -v num="$chr_num_2" 'NR == num' $Chrlist))
 
 
 # Run TopoWindows R script on the designated chromosomes
-for Chr in "${chr_array[@]}"; do
+#for Chr in "${chr_array[@]}"; do
     # Generate temp. .vcf file per chr
-    bcftools view --threads "$SLURM_CPUS_PER_TASK" -r "$Chr" -Ov -o "$SLURM_TMPDIR""$Chr".vcf "$VCF"
+    bcftools view --threads "$SLURM_CPUS_PER_TASK" -Ov -o "$SLURM_TMPDIR"/"$name".vcf "$BCF"
     # Generate fasta per chr
     Rscript ~/software/TopoWindows/Topo_windows_v04_cl_wrapper.R \
-    --vcf "$SLURM_TMPDIR""$Chr".vcf \
-    --window_type "$window" --size "$size" --incr 0 --missingness 0.5 \
-    --phased F --prefix "$outDir"fasta/"$Chr" --ali T --tree N --force T
-    for fasta in "$outDir"fasta/"$Chr"_sequences/"$Chr"*; do
-        name=$(basename "$fasta")
+    --vcf "$SLURM_TMPDIR"/"$name".vcf \
+    --window_type "$window" --size "$size" --incr 0 \
+    --phased F --prefix "$SLURM_TMPDIR"/fasta/"$name" --ali T --tree N --force T
+    for fasta in "$SLURM_TMPDIR"fasta/"$name"_sequences/"$name"*; do
+        fa_name=$(basename "$fasta")
         # Run iqtree (first generate varsite then run iqtree on that)
-        iqtree2 -s "$fasta" --prefix "$outDir"tree/"$name" \
+        iqtree2 -s "$fasta" --prefix "$SLURM_TMPDIR"/tree/"$fa_name" \
         -T "$SLURM_CPUS_PER_TASK" -st DNA -m GTR+ASC
-        iqtree2 -s "$outDir"tree/"$name".varsites.phy \
+        # Add step to remove samples without data
+        python ~/scripts/DropGappyTaxa_phylip.py \
+        -i "$SLURM_TMPDIR"/tree/"$fa_name".varsites.phy -o "$SLURM_TMPDIR"/tree/"$fa_name".varsites.nMiss.phy -m 0.8  
+        iqtree2 -s "$SLURM_TMPDIR"/tree/"$fa_name".varsites.nMiss.phy \
         -T "$SLURM_CPUS_PER_TASK" -st DNA -m GTR+ASC --abayes
     done
-done
+#done
+
+mv "$SLURM_TMPDIR"/fasta "$outDir"
+mv "$SLURM_TMPDIR"/tree "$outDir"
