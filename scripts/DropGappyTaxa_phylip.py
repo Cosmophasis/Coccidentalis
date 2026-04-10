@@ -1,4 +1,4 @@
-import os, argparse
+import argparse
 
 # Add arguments
 parser = argparse.ArgumentParser(
@@ -21,6 +21,7 @@ with open(args.infile, 'r') as file:
     # Iterate over the rows of taxa in each phylip
     # Calculate PercMissing for each taxa, if more than threshold then append to list of taxa to drop
 
+header = lines[0].split()
 
 output = []
 for line in lines[1:]: 
@@ -33,7 +34,6 @@ for line in lines[1:]:
 
 
 # Update header of the phylip file
-header = lines[0].split()
 new_header = str(len(output)) + " " + header[1] + '\n'
 output.insert(0, new_header)
 
