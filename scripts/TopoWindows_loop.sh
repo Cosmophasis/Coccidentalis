@@ -17,10 +17,10 @@ module load r bcftools iq-tree python scipy-stack/2026a
 export R_LIBS=~/.local/R/$EBVERSIONR/
 
 
-ls ~/scratch/WGS_processing/05_Filtered_VCF/*_GATKbcftools2_filtered_tagged.bcf > ~/tmp/bcf.list
+#ls ~/scratch/WGS_processing/05_Filtered_VCF/*_GATKbcftools2_filtered_tagged.bcf > ~/tmp/bcf.list
 BCFlist=~/tmp/bcf.list
 BCF=$(awk -v num="$SLURM_ARRAY_TASK_ID" 'NR==num' "$BCFlist")
-name=$(basename $BCF | awk -F'_' '{ print $1,$2 }')
+name=$(basename $BCF | awk -F'_' '{ print $1""$2 }')
 
 
 window="c" # c for region, s for no. of SNPs
@@ -28,10 +28,10 @@ size="100000" # if c in $window, put in number of bp
 if [ $window == "c" ]; then
     size_kb=$(("$size"/1000))
     outDir=~/scratch/Phylogenomics/"$size_kb"kb/
-#    mkdir -p "$outDir"{fasta,tree}
+    mkdir -p "$outDir"{fasta,tree}
 elif [ $window == "s" ]; then
     outDir=~/scratch/Phylogenomics/"$size"SNPs/
-#    mkdir -p "$outDir"{fasta,tree}
+    mkdir -p "$outDir"{fasta,tree}
 else
     echo "Unrecognized window type, choose either 'c' for bp or 's' for SNPs"
 fi
@@ -47,7 +47,9 @@ mkdir -p "$SLURM_TMPDIR"/{fasta,tree}
 # Run TopoWindows R script on the designated chromosomes
 #for Chr in "${chr_array[@]}"; do
     # Generate temp. .vcf file per chr
-    bcftools view --threads "$SLURM_CPUS_PER_TASK" -Ov -o "$SLURM_TMPDIR"/"$name".vcf "$BCF"
+    bcftools view --threads "$SLURM_CPUS_PER_TASK" -Ou "$BCF" | \
+    bcftools annotate --rename-chrs ~/tmp/chr_rename.txt \
+    -Ov -o "$SLURM_TMPDIR"/"$name".vcf
     # Generate fasta per chr
     Rscript ~/software/TopoWindows/Topo_windows_v04_cl_wrapper.R \
     --vcf "$SLURM_TMPDIR"/"$name".vcf \
@@ -66,5 +68,5 @@ mkdir -p "$SLURM_TMPDIR"/{fasta,tree}
     done
 #done
 
-mv "$SLURM_TMPDIR"/fasta "$outDir"
-mv "$SLURM_TMPDIR"/tree "$outDir"
+mv "$SLURM_TMPDIR"/fasta/* "$outDir"fasta/
+mv "$SLURM_TMPDIR"/tree/* "$outDir"tree/
