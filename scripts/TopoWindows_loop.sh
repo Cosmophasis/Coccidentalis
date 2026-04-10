@@ -20,7 +20,7 @@ export R_LIBS=~/.local/R/$EBVERSIONR/
 ls ~/scratch/WGS_processing/05_Filtered_VCF/*_GATKbcftools2_filtered_tagged.bcf > ~/tmp/bcf.list
 BCFlist=~/tmp/bcf.list
 BCF=$(awk -v num="$SLURM_ARRAY_TASK_ID" 'NR==num' "$BCFlist")
-name=$(basename $BCF | awk -F'_' '{ print $1"_"$2 }')
+name=$(basename $BCF | awk -F'_' '{ print $1,$2 }')
 
 
 window="c" # c for region, s for no. of SNPs
@@ -36,7 +36,7 @@ else
     echo "Unrecognized window type, choose either 'c' for bp or 's' for SNPs"
 fi
 
-mkdir -p "$SLURM_TMPDIR"{fasta,tree}
+mkdir -p "$SLURM_TMPDIR"/{fasta,tree}
 
 # Split chr by array task id
 #chr_num_1=$((2*"$SLURM_ARRAY_TASK_ID"-1))
@@ -53,7 +53,7 @@ mkdir -p "$SLURM_TMPDIR"{fasta,tree}
     --vcf "$SLURM_TMPDIR"/"$name".vcf \
     --window_type "$window" --size "$size" --incr 0 \
     --phased F --prefix "$SLURM_TMPDIR"/fasta/"$name" --ali T --tree N --force T
-    for fasta in "$SLURM_TMPDIR"/fasta/"$name"_sequences/"$name"*; do
+    for fasta in "$SLURM_TMPDIR"/fasta/"$name"_sequences/*.fasta; do
         fa_name=$(basename "$fasta")
         # Run iqtree (first generate varsite then run iqtree on that)
         iqtree2 -s "$fasta" --prefix "$SLURM_TMPDIR"/tree/"$fa_name" \
