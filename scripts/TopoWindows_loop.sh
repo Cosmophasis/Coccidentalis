@@ -4,7 +4,7 @@
 #SBATCH --mail-user=colinchiu62@gmail.com
 #SBATCH --ntasks=1
 #SBATCH -c 20
-#SBATCH --mem-per-cpu=80G
+#SBATCH --mem=80G
 #SBATCH -t 2-0:0:0
 #SBATCH -o TopoWindows_loop_%j.out
 #SBATCH -e TopoWindows_loop_%j.out
