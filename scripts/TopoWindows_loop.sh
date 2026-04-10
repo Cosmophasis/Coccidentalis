@@ -28,14 +28,15 @@ size="100000" # if c in $window, put in number of bp
 if [ $window == "c" ]; then
     size_kb=$(("$size"/1000))
     outDir=~/scratch/Phylogenomics/"$size_kb"kb/
-    mkdir -p "$outDir"{fasta,tree}
+#    mkdir -p "$outDir"{fasta,tree}
 elif [ $window == "s" ]; then
     outDir=~/scratch/Phylogenomics/"$size"SNPs/
-    mkdir -p "$outDir"{fasta,tree}
+#    mkdir -p "$outDir"{fasta,tree}
 else
     echo "Unrecognized window type, choose either 'c' for bp or 's' for SNPs"
 fi
 
+mkdir -p "$SLURM_TMPDIR"{fasta,tree}
 
 # Split chr by array task id
 #chr_num_1=$((2*"$SLURM_ARRAY_TASK_ID"-1))
@@ -52,7 +53,7 @@ fi
     --vcf "$SLURM_TMPDIR"/"$name".vcf \
     --window_type "$window" --size "$size" --incr 0 \
     --phased F --prefix "$SLURM_TMPDIR"/fasta/"$name" --ali T --tree N --force T
-    for fasta in "$SLURM_TMPDIR"fasta/"$name"_sequences/"$name"*; do
+    for fasta in "$SLURM_TMPDIR"/fasta/"$name"_sequences/"$name"*; do
         fa_name=$(basename "$fasta")
         # Run iqtree (first generate varsite then run iqtree on that)
         iqtree2 -s "$fasta" --prefix "$SLURM_TMPDIR"/tree/"$fa_name" \
