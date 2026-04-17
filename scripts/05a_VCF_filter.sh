@@ -4,7 +4,7 @@
 #SBATCH --mail-user=colinchiu62@gmail.com
 #SBATCH --ntasks=1
 #SBATCH -c 16
-#SBATCH --mem=24G
+#SBATCH --mem=40G
 #SBATCH -t 1-0:0:0
 #SBATCH -o 05a_VCF_filter_%j.out
 #SBATCH -e 05a_VCF_filter_%j.out
@@ -27,7 +27,7 @@ vcfList=~/tmp/vcf.list
 
 mkdir -p "$outDir"
 
-export _JAVA_OPTIONS='-Xmx20g'
+export _JAVA_OPTIONS='-Xmx38g'
 
 # Set chromosome to facilitate array job
 VCF=$(awk -v num="$SLURM_ARRAY_TASK_ID" 'NR==num' "$vcfList")
@@ -54,17 +54,32 @@ gatk VariantFiltration \
 --tmp-dir "$SLURM_TMPDIR" --QUIET true
 
 
-# First round of bcftools filter
+# First round of bcftools filter for PacBio reads
+bcftools view --threads "$SLURM_CPUS_PER_TASK" \
+-s SRR25758751,SRR35559941 -Ou "$outDir""$name"_gatk.vcf.gz |
+bcftools filter --threads "$SLURM_CPUS_PER_TASK" -Ob -W=tbi \
+-S . -e 'FMT/DP<3 | FMT/GQ<20 | FMT/DP>200' -o "$SLURM_TMPDIR"/"$name"_PacBioOnly_GATK_setMissing.bcf
+# If a sample has DP<3 or DP>200 (set based on distribution) convert to missing gt (./.)
+
+# First round of bcftools filter for non-PacBio reads
+bcftools view --threads "$SLURM_CPUS_PER_TASK" \
+-s ^SRR25758751,SRR35559941 -Ou $VCF |
+bcftools filter --threads "$SLURM_CPUS_PER_TASK" -Ob -W=tbi \
+-S . -e 'FMT/DP<3 | FMT/GQ<20 | FMT/DP>50' -o "$SLURM_TMPDIR"/"$name"_nonPacBio_GATK_setMissing.bcf
+# If a sample has DP<3 or DP>50 (set based on distribution) convert to missing gt (./.)
+
+# Merge the PacBio and non-PacBio BCFs
+ls "$SLURM_TMPDIR"/*GATK_setMissing.bcf > "$SLURM_TMPDIR"/merge_bcf.list
+bcftools merge --threads "$SLURM_CPUS_PER_TASK" -W=tbi \
+-l "$SLURM_TMPDIR"/merge_bcf.list \
+-Ob -o "$SLURM_TMPDIR"/"$name"_GATK_setMissing.bcf
+
 bcftools filter --threads "$SLURM_CPUS_PER_TASK" -Ou \
--S . -e 'FMT/DP<3 | FMT/GQ<20 | FMT/DP>50' "$outDir""$name"_gatk.vcf.gz | \
-bcftools filter --threads "$SLURM_CPUS_PER_TASK" -Ou \
--e 'AC==0 || AC==AN' --SnpGap 5 | \
-bcftools view --threads "$SLURM_CPUS_PER_TASK" -Ob \
--m2 -M2 -v snps -o "$outDir""$name"_GATKbcftool1_filtered.bcf -W=tbi
+-e 'AC==0 || AC==AN' --SnpGap 5 "$SLURM_TMPDIR"/"$name"_GATK_setMissing.bcf | \
+bcftools view --threads "$SLURM_CPUS_PER_TASK" -Ou -m2 -M2 -v snps | \
 bcftools +fill-tags --threads "$SLURM_CPUS_PER_TASK" \
--Ob -o "$outDir""$name"_GATKbcftool1_filtered_tagged.bcf -W=tbi "$outDir""$name"_GATKbcftool1_filtered.bcf \
+-Ob -o "$outDir""$name"_GATKbcftools1.bcf -W=tbi \
 -- -t F_MISSING,MAF
-# If a sample has DP<3 or DP>27 (2*AVG(INFO/DP)) convert to missing gt (./.)
 # Remove variants that lack reference alleles and remove variants within 5bp of INDELS
 # Only output biallelic SNPs
 
